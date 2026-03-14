@@ -46,13 +46,14 @@ class Settings(BaseModel):
 def load_config(config_path: str = "config.yaml") -> Settings:
     """
     Loads config from a YAML file.
-    Falls back to config.example.yaml if config.yaml does not exist.
+    Falls back to config-example.yaml if config.yaml does not exist.
     """
     if not os.path.exists(config_path):
-        example_path = "config.example.yaml"
+        example_path = "config-example.yaml"
         logger.warning(
             f"{config_path} not found. Loading example config from {example_path}"
         )
+        config_path = example_path
 
     with open(config_path) as f:
         config_dict = yaml.safe_load(f)
