@@ -52,7 +52,7 @@ async def ping_services():
     """Utility to test connections on startup."""
     try:
         # Import models here to ensure they are registered with Base.metadata before initialization
-        import sentistream.shared.models # noqa
+        import sentistream.shared.models  # noqa
 
         # Test Redis
         redis_client.ping()
