@@ -1,0 +1,25 @@
+app:
+  name: "SentiStream Worker"
+  env: "production"
+  log_level: "INFO"
+
+llm:
+  model: "gpt-4o-mini"
+  api_key: "your_api_key_here"
+
+kafka:
+  bootstrap_servers:
+    - "kafka:29092"
+  topics:
+    reviews_raw: "reviews_raw"
+    reviews_embedded: "reviews_embedded"
+    reviews_clustered: "reviews_clustered"
+
+database:
+  postgres_dsn: "postgresql+asyncpg://sentistream:password@postgres:5432/sentistream"
+  redis_url: "redis://redis:6379/0"
+
+ml:
+  hf_repo_id: "your_username/sentistream-models" # Replace with your HuggingFace repo
+  embedder_onnx_dir: "/app/models/bge-small"
+  umap_onnx_path: "/app/models/umap_encoder.onnx"

@@ -1,0 +1,113 @@
+x-network: &network_config
+  networks:
+    - sentistream-net
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    <<: *network_config
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    <<: *network_config
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  postgres:
+    image: postgres:15
+    <<: *network_config
+    environment:
+      POSTGRES_USER: sentistream
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: sentistream
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    <<: *network_config
+    ports:
+      - "6379:6379"
+
+  # --- Event-Driven Application Services ---
+
+  api:
+    build: .
+    <<: *network_config
+    ports:
+      - "8000:8000"
+    depends_on:
+      - kafka
+      - postgres
+      - redis
+    command: ["uvicorn", "sentistream.ingestion.api:app", "--host", "0.0.0.0", "--port", "8000"]
+    volumes:
+      - ./config.docker.yaml:/app/config.yaml
+
+  embedder:
+    build: .
+    <<: *network_config
+    depends_on:
+      - kafka
+    # This service is horizontally scalable
+    command: ["python", "-m", "sentistream.services.embedder_svc"]
+    volumes:
+      - ./config.docker.yaml:/app/config.yaml
+      - ./models:/app/models
+
+  clusterer:
+    build: .
+    <<: *network_config
+    depends_on:
+      - kafka
+      - redis
+    # Must run as a single instance
+    command: ["python", "-m", "sentistream.services.clusterer_svc"]
+    volumes:
+      - ./config.docker.yaml:/app/config.yaml
+
+  namer:
+    build: .
+    <<: *network_config
+    depends_on:
+      - kafka
+      - redis
+    environment:
+      - LITELLM_API_KEY=${LITELLM_API_KEY:-your_active_llm_key_here}
+    command: ["python", "-m", "sentistream.services.namer_svc"]
+    volumes:
+      - ./config.docker.yaml:/app/config.yaml
+
+  dashboard:
+    build: .
+    <<: *network_config
+    ports:
+      - "8050:8050"
+    depends_on:
+      - redis
+    command: ["python", "-m", "sentistream.dashboard.app"]
+    volumes:
+      - ./config.docker.yaml:/app/config.yaml
+
+networks:
+  sentistream-net:
+    driver: bridge
+
+volumes:
+  pgdata:
