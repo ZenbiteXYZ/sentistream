@@ -1,0 +1,78 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environment
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Editor/IDE-specific files
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store # macOS
+Thumbs.db # Windows
+
+# Environment variables
+.env
+.flaskenv
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Logs and other miscellaneous files
+*.log
+!pip-log.txt # Installer logs above might include this, but this is a common explicit ignore.
+*.temp
+*.tmp
+.ruff_cache/
+
+# ML
+models/*.onnx
+models/*.bin
+models/*.pt

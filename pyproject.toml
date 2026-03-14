@@ -1,0 +1,89 @@
+[project]
+name = "sentistream"
+version = "0.1.0"
+description = "AI-driven real-time review clustering system"
+requires-python = ">=3.12"
+dependencies = [
+    # Web & API
+    "fastapi",
+    "uvicorn",
+    "dash",
+    "plotly",
+    "pandas",
+
+    # ML & Clustering
+    "onnxruntime",
+    "tokenizers",
+    "river",
+    "litellm",
+
+    # Async & Data
+    "aiokafka",
+    "asyncpg",
+    "greenlet",
+    "redis",
+    "pydantic",
+    "pydantic-settings",
+    "sqlalchemy",
+
+    # Utilities
+    "python-dotenv",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "pre-commit",
+]
+
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+]
+
+train = [
+    "parametric_umap @ git+https://github.com/fcarli/parametric_umap",
+    "scikit-learn",
+    "wandb",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+fix = true
+src = ["src"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "N",    # pep8-naming
+    "C90",  # mccabe complexity
+    "RUF",  # specific Ruff rules
+    "SIM",  # flake8-simplify
+    "TID",  # flake8-tidy-imports
+]
+
+ignore = [
+    "E501",
+    "B008",
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+lines-after-imports = 2
+known-first-party = ["sentistream", "tests"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
