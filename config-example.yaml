@@ -1,0 +1,30 @@
+# Application Settings
+app:
+  name: "SentiStream Worker"
+  env: "development"
+  log_level: "INFO"
+
+# LLM Providers Configuration
+llm:
+  model: "gpt-4o-mini"
+  api_key: "your_api_key_here"
+
+# Message Broker
+kafka:
+  bootstrap_servers:
+    - "localhost:9092"
+  topics:
+    reviews_raw: "reviews_raw"
+    reviews_embedded: "reviews_embedded"
+    reviews_clustered: "reviews_clustered"
+
+# Datastore Config
+database:
+  postgres_dsn: "postgresql+asyncpg://sentistream:password@localhost:5432/sentistream"
+  redis_url: "redis://localhost:6379/0"
+
+# ML Pipeline Paths
+ml:
+  hf_repo_id: "ZenbiteXYZ/sentistream-umap"
+  embedder_onnx_dir: "models/bge-small"
+  umap_onnx_path: "models/umap_encoder.onnx"
