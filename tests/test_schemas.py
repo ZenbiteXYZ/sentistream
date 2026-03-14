@@ -3,18 +3,18 @@ from datetime import datetime
 import pytest
 from pydantic import ValidationError
 
-from sentistream.shared.schemas import ProcessedReview, ReviewIn
+from sentistream.shared.schemas import ProcessedReview, ReviewRaw
 
 
 def test_review_in_schema():
-    """Test that the ReviewIn schema correctly parses valid data."""
+    """Test that the ReviewRaw schema correctly parses valid data."""
     valid_data = {
         "id": "12345",
         "text": "This is a great product!",
         "metadata": {"source": "web"},
     }
 
-    review = ReviewIn(**valid_data)
+    review = ReviewRaw(**valid_data)
 
     assert review.id == "12345"
     assert review.text == "This is a great product!"
@@ -23,11 +23,11 @@ def test_review_in_schema():
 
 
 def test_review_in_schema_missing_fields():
-    """Test that the ReviewIn schema fails when missing necessary data."""
+    """Test that the ReviewRaw schema fails when missing necessary data."""
     invalid_data = {"text": "Missing ID!"}
 
     with pytest.raises(ValidationError):
-        ReviewIn(**invalid_data)
+        ReviewRaw(**invalid_data)
 
 
 def test_processed_review_schema():
