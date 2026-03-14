@@ -53,7 +53,7 @@ async def ping_services():
     try:
         # Import models here to ensure they are registered with Base.metadata before initialization
         import sentistream.shared.models # noqa
-        
+
         # Test Redis
         redis_client.ping()
         logger.info("Redis connected successfully.")
