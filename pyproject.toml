@@ -16,6 +16,8 @@ dependencies = [
     "tokenizers",
     "river",
     "litellm",
+    "huggingface-hub",
+    "filelock",
 
     # Async & Data
     "aiokafka",
