@@ -25,6 +25,6 @@ database:
 
 # ML Pipeline Paths
 ml:
-  hf_repo_id: "ZenbiteXYZ/sentistream-umap"
+  hf_repo_id: "ZenbiteXYZ/sentistream-encoder-v4"
   embedder_onnx_dir: "models/bge-small"
-  umap_onnx_path: "models/umap_encoder.onnx"
+  umap_onnx_path: "models/umap/model.onnx"
