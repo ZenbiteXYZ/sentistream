@@ -61,6 +61,7 @@ Thumbs.db # Windows
 # Environment variables
 .env
 .flaskenv
+!.env.example
 
 # Jupyter Notebook
 .ipynb_checkpoints

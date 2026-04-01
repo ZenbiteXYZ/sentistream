@@ -56,6 +56,8 @@ services:
       - kafka
       - postgres
       - redis
+    env_file:
+      - .env
     command: ["uvicorn", "sentistream.ingestion.api:app", "--host", "0.0.0.0", "--port", "8000"]
     volumes:
       - ./config.docker.yaml:/app/config.yaml
@@ -66,6 +68,8 @@ services:
     depends_on:
       - kafka
     # This service is horizontally scalable
+    env_file:
+      - .env
     command: ["python", "-m", "sentistream.services.embedder_svc"]
     volumes:
       - ./config.docker.yaml:/app/config.yaml
@@ -78,6 +82,8 @@ services:
       - kafka
       - redis
     # Must run as a single instance
+    env_file:
+      - .env
     command: ["python", "-m", "sentistream.services.clusterer_svc"]
     volumes:
       - ./config.docker.yaml:/app/config.yaml
@@ -88,8 +94,8 @@ services:
     depends_on:
       - kafka
       - redis
-    environment:
-      - LITELLM_API_KEY=${LITELLM_API_KEY:-your_active_llm_key_here}
+    env_file:
+      - .env
     command: ["python", "-m", "sentistream.services.namer_svc"]
     volumes:
       - ./config.docker.yaml:/app/config.yaml
@@ -101,6 +107,8 @@ services:
       - "8050:8050"
     depends_on:
       - redis
+    env_file:
+      - .env
     command: ["python", "-m", "sentistream.dashboard.app"]
     volumes:
       - ./config.docker.yaml:/app/config.yaml
