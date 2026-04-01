@@ -2,6 +2,8 @@ import asyncio
 import json
 import logging
 
+from sqlalchemy import update
+
 from sentistream.shared.config import settings
 from sentistream.shared.db import AsyncSessionLocal, redis_client
 from sentistream.shared.kafka_client import get_kafka_consumer
@@ -75,19 +77,14 @@ async def run_namer_service():
                     **clustered_review.model_dump(), cluster_name=active_name
                 )
 
-                # 3. Save to PostgreSQL Database persistently
+                # 3. Update PostgreSQL Database persistently
                 async with AsyncSessionLocal() as session:
-                    db_record = ReviewRecord(
-                        id=final_review.id,
-                        text=final_review.text,
-                        timestamp=final_review.timestamp.replace(tzinfo=None),
-                        metadata_col=final_review.metadata,
-                        cluster_id=final_review.cluster_id,
-                        cluster_name=final_review.cluster_name,
-                        reduced_coords=final_review.reduced_coords,
-                        full_embedding=final_review.embedding,
+                    stmt = (
+                        update(ReviewRecord)
+                        .where(ReviewRecord.id == final_review.id)
+                        .values(cluster_name=final_review.cluster_name)
                     )
-                    session.add(db_record)
+                    await session.execute(stmt)
                     await session.commit()
 
                 logger.info(

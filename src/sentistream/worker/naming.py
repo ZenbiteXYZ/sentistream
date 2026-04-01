@@ -27,6 +27,10 @@ class ClusterNamer:
         Takes a list of reviews near the centroid of a cluster and asks the
         LLM to infer a short, human-readable name for it.
         """
+        if not self.api_key or self.api_key == "your_api_key_here":
+            logger.warning("LLM API Key missing. Returning fallback cluster name.")
+            return "Generated Topic (No LLM)"
+
         if not sample_reviews:
             return "Uncategorized"
 
