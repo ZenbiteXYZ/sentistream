@@ -51,7 +51,9 @@ class PipelineEmbedder:
             self._download_bge_models(hf_hub_download, bge_model, bge_tokenizer)
             self._download_umap_models(hf_hub_download, umap_model, base_dir)
 
-    def _download_bge_models(self, hf_hub_download, bge_model: str, bge_tokenizer: str) -> None:
+    def _download_bge_models(
+        self, hf_hub_download, bge_model: str, bge_tokenizer: str
+    ) -> None:
         if os.path.exists(bge_model) and os.path.exists(bge_tokenizer):
             return
 
@@ -80,7 +82,9 @@ class PipelineEmbedder:
             logger.error(f"Failed to download BGE models: {e}")
             raise
 
-    def _download_umap_models(self, hf_hub_download, umap_model: str, base_dir: Path) -> None:
+    def _download_umap_models(
+        self, hf_hub_download, umap_model: str, base_dir: Path
+    ) -> None:
         if os.path.exists(umap_model):
             return
 
