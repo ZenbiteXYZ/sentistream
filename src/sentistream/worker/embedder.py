@@ -37,40 +37,81 @@ class PipelineEmbedder:
         if str(base_dir) == ".":
             base_dir = Path("models")
 
+        os.makedirs(self.embedder_dir, exist_ok=True)
         os.makedirs(base_dir, exist_ok=True)
         lock_path = base_dir / ".download.lock"
 
-        # We acquire a lock on the folder. If 3 processes start, only 1 gets the lock,
-        # and the other 2 will block right here until process 1 finishes.
         with FileLock(lock_path):
-            if not (
-                os.path.exists(bge_model)
-                and os.path.exists(bge_tokenizer)
-                and os.path.exists(umap_model)
-            ):
-                repo_id = settings.ml.hf_repo_id
-                if not repo_id or repo_id == "your_username/sentistream-models":
-                    msg = "ML Models missing locally and no valid 'hf_repo_id' configured in config.yaml!"
-                    logger.error(msg)
-                    raise FileNotFoundError(msg)
+            try:
+                from huggingface_hub import hf_hub_download
+            except ImportError:
+                logger.error("huggingface_hub missing! Cannot download models.")
+                return
 
-                logger.info(
-                    f"Models missing locally. Downloading from HuggingFace repo: '{repo_id}'..."
-                )
+            self._download_bge_models(hf_hub_download, bge_model, bge_tokenizer)
+            self._download_umap_models(hf_hub_download, umap_model, base_dir)
+
+    def _download_bge_models(
+        self, hf_hub_download, bge_model: str, bge_tokenizer: str
+    ) -> None:
+        if os.path.exists(bge_model) and os.path.exists(bge_tokenizer):
+            return
+
+        logger.info("Downloading BGE ONNX model from Xenova/bge-small-en-v1.5...")
+        try:
+            hf_hub_download(
+                repo_id="Xenova/bge-small-en-v1.5",
+                filename="tokenizer.json",
+                local_dir=self.embedder_dir,
+                local_dir_use_symlinks=False,
+            )
+            onnx_file = hf_hub_download(
+                repo_id="Xenova/bge-small-en-v1.5",
+                filename="onnx/model.onnx",
+                local_dir=self.embedder_dir,
+                local_dir_use_symlinks=False,
+            )
+
+            import shutil
+
+            if os.path.exists(onnx_file) and onnx_file != bge_model:
+                shutil.move(onnx_file, bge_model)
+
+            logger.info("Successfully downloaded BGE models!")
+        except Exception as e:
+            logger.error(f"Failed to download BGE models: {e}")
+            raise
+
+    def _download_umap_models(
+        self, hf_hub_download, umap_model: str, base_dir: Path
+    ) -> None:
+        if os.path.exists(umap_model):
+            return
+
+        repo_id = settings.ml.hf_repo_id
+        if not repo_id or repo_id == "your_username/sentistream-models":
+            logger.warning("No valid HF repo provided for UMAP. Using naive reduction.")
+            return
+
+        try:
+            logger.info(f"Downloading UMAP model and components from {repo_id}...")
+            files_to_dl = [
+                "model.onnx",
+                "sentistream_encoder_v4.onnx.data",
+                "scaler_config.json",
+            ]
+            for fname in files_to_dl:
                 try:
-                    from huggingface_hub import snapshot_download
-
-                    snapshot_download(
+                    hf_hub_download(
                         repo_id=repo_id,
+                        filename=fname,
                         local_dir=str(base_dir),
                         local_dir_use_symlinks=False,
                     )
-                    logger.info("Successfully downloaded ML models from HuggingFace!")
-                except Exception as e:
-                    logger.error(f"Failed to download models from HuggingFace: {e}")
-                    raise
-            else:
-                logger.debug("Models found locally. Proceeding to load.")
+                except Exception as dl_e:
+                    logger.warning(f"Could not download {fname}: {dl_e}")
+        except Exception as e:
+            logger.warning(f"Failed download UMAP from {repo_id}: {e}")
 
     def _load_models(self):
         """Loads the ONNX sessions and the Tokenizer."""
@@ -97,22 +138,42 @@ class PipelineEmbedder:
         except Exception as e:
             logger.warning(f"Could not load BGE ONNX model: {e}")
 
-        # 3. Load Parametric UMAP ONNX Model
-        try:
-            self.umap_session = ort.InferenceSession(
-                self.umap_path, providers=["CPUExecutionProvider"]
+        # 3. Load Parametric UMAP ONNX Model & Scaler
+        self.scaler_mean = None
+        self.scaler_scale = None
+        scaler_path = os.path.join(Path(self.umap_path).parent, "scaler_config.json")
+        if os.path.exists(scaler_path):
+            import json
+
+            try:
+                with open(scaler_path) as f:
+                    scaler_data = json.load(f)
+                self.scaler_mean = np.array(scaler_data["mean"], dtype=np.float32)
+                self.scaler_scale = np.array(scaler_data["scale"], dtype=np.float32)
+                logger.info(f"Loaded StandardScaler config from {scaler_path}")
+            except Exception as e:
+                logger.warning(f"Could not load StandardScaler config: {e}")
+
+        if os.path.exists(self.umap_path):
+            try:
+                self.umap_session = ort.InferenceSession(
+                    self.umap_path, providers=["CPUExecutionProvider"]
+                )
+                logger.info(f"UMAP ONNX model loaded from {self.umap_path}")
+            except Exception as e:
+                logger.warning(f"Could not load UMAP ONNX model: {e}")
+        else:
+            logger.info(
+                "UMAP model file not found locally. Skipping UMAP ONNX session load in favor of naive reduction."
             )
-            logger.info(f"UMAP ONNX model loaded from {self.umap_path}")
-        except Exception as e:
-            logger.warning(f"Could not load UMAP ONNX model: {e}")
 
     def embed_and_reduce(self, text: str) -> tuple[list[float], list[float]]:
         """
         Takes raw text, generates a 384D embedding, and reduces it to 5D.
         Returns (original_384d_embedding, reduced_5d_embedding).
         """
-        if not self.tokenizer or not self.bge_session or not self.umap_session:
-            raise RuntimeError("Models are not loaded correctly.")
+        if not self.tokenizer or not self.bge_session:
+            raise RuntimeError("Embedder models are not loaded correctly.")
 
         # -- A. Tokenization --
         encoded = self.tokenizer.encode(text)
@@ -145,11 +206,24 @@ class PipelineEmbedder:
         # Convert to float32 for the UMAP session
         sentence_embedding_f32 = sentence_embedding.astype(np.float32)
 
-        # -- C. Parametric UMAP Reduction (5D) --
-        umap_input_name = self.umap_session.get_inputs()[0].name
-        reduced_embedding = self.umap_session.run(
-            None, {umap_input_name: sentence_embedding_f32}
-        )[0]
+        # -- C. Parametric UMAP Reduction & Scaling (5D) --
+        if self.umap_session:
+            # Apply StandardScaler Transformation first if we have loaded it
+            if self.scaler_mean is not None and self.scaler_scale is not None:
+                # (X - mean) / scale
+                umap_input_data = (
+                    sentence_embedding_f32 - self.scaler_mean
+                ) / self.scaler_scale
+            else:
+                umap_input_data = sentence_embedding_f32
+
+            umap_input_name = self.umap_session.get_inputs()[0].name
+            reduced_embedding = self.umap_session.run(
+                None, {umap_input_name: umap_input_data}
+            )[0]
+        else:
+            # Fallback naive reduction
+            reduced_embedding = sentence_embedding_f32[:, :5]
 
         # Return as flat Python lists for JSON serialization / Pydantic later
         return (

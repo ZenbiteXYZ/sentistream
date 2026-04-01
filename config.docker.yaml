@@ -1,11 +1,13 @@
+# Docker-specific overrides — all secrets come from .env via environment variables.
+# This file only contains values that differ from config.yaml in a Docker network context.
 app:
   name: "SentiStream Worker"
-  env: "production"
+  env: "development"
   log_level: "INFO"
 
 llm:
   model: "gpt-4o-mini"
-  api_key: "your_api_key_here"
+  api_key: "placeholder"  # overridden by SENTISTREAM_LLM_API_KEY env var
 
 kafka:
   bootstrap_servers:
@@ -20,6 +22,6 @@ database:
   redis_url: "redis://redis:6379/0"
 
 ml:
-  hf_repo_id: "your_username/sentistream-models" # Replace with your HuggingFace repo
+  hf_repo_id: "ZenbiteXYZ/sentistream-encoder-v4"
   embedder_onnx_dir: "/app/models/bge-small"
-  umap_onnx_path: "/app/models/umap_encoder.onnx"
+  umap_onnx_path: "/app/models/umap/model.onnx"

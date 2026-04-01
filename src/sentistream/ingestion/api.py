@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
 
 from sentistream.shared.config import settings
+from sentistream.shared.db import ping_services
 from sentistream.shared.kafka_client import get_kafka_producer
 from sentistream.shared.schemas import ReviewRaw
 
@@ -22,6 +23,9 @@ async def lifespan(app: FastAPI):
     global producer
     logger.info("Starting up Ingestion API...")
     try:
+        # Initialize database tables and test connections
+        await ping_services()
+
         producer = await get_kafka_producer()
         yield
     finally:

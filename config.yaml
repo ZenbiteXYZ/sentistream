@@ -4,12 +4,14 @@ app:
   env: "development"
   log_level: "INFO"
 
-# LLM Providers Configuration
+# LLM Provider — override with env vars in production
+# Env vars: SENTISTREAM_LLM_MODEL, SENTISTREAM_LLM_API_KEY
 llm:
   model: "gpt-4o-mini"
   api_key: "your_api_key_here"
 
 # Message Broker
+# Env var: SENTISTREAM_KAFKA_BOOTSTRAP_SERVERS (comma-separated)
 kafka:
   bootstrap_servers:
     - "localhost:9092"
@@ -19,12 +21,14 @@ kafka:
     reviews_clustered: "reviews_clustered"
 
 # Datastore Config
+# Env vars: SENTISTREAM_POSTGRES_DSN, SENTISTREAM_REDIS_URL
 database:
   postgres_dsn: "postgresql+asyncpg://sentistream:password@localhost:5432/sentistream"
   redis_url: "redis://localhost:6379/0"
 
 # ML Pipeline Paths
+# Env vars: SENTISTREAM_HF_REPO_ID, SENTISTREAM_EMBEDDER_DIR, SENTISTREAM_UMAP_PATH
 ml:
-  hf_repo_id: "ZenbiteXYZ/sentistream-umap"
+  hf_repo_id: "ZenbiteXYZ/sentistream-encoder-v4"
   embedder_onnx_dir: "models/bge-small"
-  umap_onnx_path: "models/umap_encoder.onnx"
+  umap_onnx_path: "models/umap/model.onnx"

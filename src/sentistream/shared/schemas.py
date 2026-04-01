@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from pydantic import BaseModel, Field
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 class ReviewRaw(BaseModel):
     id: str
     text: str
-    timestamp: datetime = Field(default_factory=datetime.now())
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     metadata: dict | None = None
 
 
