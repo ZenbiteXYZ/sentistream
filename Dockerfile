@@ -21,7 +21,6 @@ WORKDIR /app
 COPY pyproject.toml .
 
 # Install dependencies (only production, no test/train packages)
-RUN pip wheel --no-deps --requirement <(python -c "import tomli; print('\n'.join(tomli.load(open('pyproject.toml', 'rb'))['project']['dependencies']))" 2>/dev/null || pip install tomli && python -c "import tomli; print('\n'.join(tomli.load(open('pyproject.toml', 'rb'))['project']['dependencies']))") --wheel-dir /app/wheels
 RUN pip wheel --no-cache-dir --wheel-dir /app/wheels .
 
 # --- Final Production Stage ---
@@ -48,9 +47,10 @@ RUN pip install --no-cache --no-index /wheels/* \
 # Copy application code
 COPY --chown=appuser:appuser src/ src/
 COPY --chown=appuser:appuser config.yaml config.yaml
-COPY --chown=appuser:appuser config-example.yaml config-example.yaml
 
 # Switch to non-root user
 USER appuser
+
+ENV PYTHONPATH=/app/src
 
 CMD ["uvicorn", "sentistream.ingestion.api:app", "--host", "0.0.0.0", "--port", "8000"]
